@@ -21,7 +21,7 @@ public class Flagbric implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		Registry.register(Registry.BLOCK, new Identifier("flagbric", "flag_block"), FLAG_BLOCK);
-		Registry.register(Registry.ITEM, new Identifier("flagbric", "flag_block"), new FlagItem(FLAG_BLOCK, new FabricItemSettings().group(ItemGroup.MISC)));
+		Registry.register(Registry.ITEM, new Identifier("flagbric", "flag_block"), new FlagItem(FLAG_BLOCK, new FabricItemSettings().group(ItemGroup.BUILDING_BLOCKS)));
 
 		FLAG_BLOCK_ENTITY = Registry.register(Registry.BLOCK_ENTITY_TYPE, "flagbric:flag_block_entity", BlockEntityType.Builder.create(FlagBlockEntity::new, FLAG_BLOCK).build(null));
 	}
