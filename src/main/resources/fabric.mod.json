@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "flagbric",
+  "version": "${version}",
+
+  "name": "flagbric",
+  "description": "flags on fabric!",
+  "authors": [
+    "TheEpicBlock"
+  ],
+  "contact": {
+    "homepage": "",
+    "sources": "https://github.com/TheEpicBlock/flagbric"
+  },
+
+  "license": "CC0-1.0",
+  "icon": "assets/flagbric/icon.png",
+
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "nl.theepicblock.flagbric.Flagbric"
+    ],
+    "client": [
+      "nl.theepicblock.flagbric.FlagbricClient"
+    ]
+  },
+  "mixins": [
+    "flagbric.mixins.json"
+  ],
+
+  "depends": {
+    "fabricloader": ">=0.7.4",
+    "fabric": "*",
+    "minecraft": "1.16.x"
+  }
+}

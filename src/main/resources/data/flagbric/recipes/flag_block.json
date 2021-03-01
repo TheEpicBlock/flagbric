@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " S ",
+    " F ",
+    " S "
+  ],
+  "key": {
+    "F": {
+      "tag": "minecraft:wooden_fences"
+    },
+    "S": {
+      "item": "minecraft:stick"
+    }
+  },
+  "result": {
+    "item": "flagbric:flag_block",
+    "count": 1
+  }
+}
+
