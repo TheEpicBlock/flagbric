@@ -7,15 +7,16 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.BannerItem;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
 public class FlagBlockEntity extends BlockEntity implements Inventory,BlockEntityClientSerializable {
 	private ItemStack banner = ItemStack.EMPTY;
 	private Direction direction = Direction.NORTH;
 
-	public FlagBlockEntity() {
-		super(Flagbric.FLAG_BLOCK_ENTITY);
+	public FlagBlockEntity(BlockPos pos, BlockState state) {
+		super(Flagbric.FLAG_BLOCK_ENTITY, pos, state);
 	}
 
 	@Override
@@ -96,30 +97,30 @@ public class FlagBlockEntity extends BlockEntity implements Inventory,BlockEntit
 	}
 
 	@Override
-	public void fromTag(BlockState state, CompoundTag tag) {
+	public void readNbt(NbtCompound tag) {
 		if (tag.contains("item", 10)) {
-			banner = ItemStack.fromTag(tag.getCompound("item"));
+			banner = ItemStack.fromNbt(tag.getCompound("item"));
 		}
 		if (tag.contains("direction")) {
 			direction = Direction.fromRotation(tag.getFloat("direction"));
 		}
-		super.fromTag(state, tag);
+		super.readNbt(tag);
 	}
 
 	@Override
-	public CompoundTag toTag(CompoundTag tag) {
-		tag.put("item", banner.toTag(new CompoundTag()));
+	public NbtCompound writeNbt(NbtCompound tag) {
+		tag.put("item", banner.writeNbt(new NbtCompound()));
 		tag.putFloat("direction", direction.asRotation());
-		return super.toTag(tag);
+		return super.writeNbt(tag);
 	}
 
 	@Override
-	public void fromClientTag(CompoundTag compoundTag) {
-		this.fromTag(null, compoundTag);
+	public void fromClientTag(NbtCompound compoundTag) {
+		this.readNbt(compoundTag);
 	}
 
 	@Override
-	public CompoundTag toClientTag(CompoundTag compoundTag) {
-		return toTag(compoundTag);
+	public NbtCompound toClientTag(NbtCompound compoundTag) {
+		return writeNbt(compoundTag);
 	}
 }

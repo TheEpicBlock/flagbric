@@ -44,7 +44,7 @@ public class FlagItem extends BlockItem {
 		BlockPos.Mutable mPos = pos.mutableCopy();
 		while (true) {
 			mPos.move(0,1,0);
-			if (!World.isInBuildLimit(mPos)) {
+			if (!world.isInBuildLimit(mPos)) {
 				if (!world.isClient) {
 					int j = world.getHeight();
 					if (playerEntity instanceof ServerPlayerEntity && mPos.getY() >= j) {

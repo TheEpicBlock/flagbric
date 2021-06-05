@@ -9,32 +9,36 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BannerBlockEntityRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
+import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
+import net.minecraft.client.render.entity.model.EntityModelLayers;
 import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.util.math.Vector3f;
 import net.minecraft.item.BannerItem;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
-
+import net.minecraft.util.math.Vec3f;
 import java.util.List;
 
-public class FlagBlockRenderer extends BlockEntityRenderer<FlagBlockEntity> {
-	private final ModelPart banner = BannerBlockEntityRenderer.createBanner();
+public class FlagBlockRenderer implements BlockEntityRenderer<FlagBlockEntity> {
+	private final ModelPart banner;
 	private static final boolean BANNERPP = FabricLoader.getInstance().isModLoaded("bannerpp");
 
-	public FlagBlockRenderer(BlockEntityRenderDispatcher dispatcher) {
-		super(dispatcher);
+	public FlagBlockRenderer(BlockEntityRendererFactory.Context ctx) {
+		ModelPart layerModel = ctx.getLayerModelPart(EntityModelLayers.BANNER);
+		this.banner = layerModel.getChild("flag");
 	}
 
 	@Override
 	public void render(FlagBlockEntity entity, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, int overlay) {
-		if (!entity.getStack(0).isEmpty()) {
-			ItemStack stack = entity.getStack(0);
+		ItemStack stack = entity.getStack(0);
+		if (!stack.isEmpty()) {
 			if (!(stack.getItem() instanceof BannerItem)) return;
+
 			DyeColor color = ((BannerItem)stack.getItem()).getColor();
-			List<Pair<BannerPattern, DyeColor>> list = BannerBlockEntity.method_24280(color, BannerBlockEntity.getPatternListTag(stack));
+			List<Pair<BannerPattern, DyeColor>> list = BannerBlockEntity.getPatternsFromNbt(color, BannerBlockEntity.getPatternListTag(stack));
 
 			if (BANNERPP) {
 				BannerppHandler.onPreRender(stack);
@@ -44,31 +48,31 @@ public class FlagBlockRenderer extends BlockEntityRenderer<FlagBlockEntity> {
 
 			//matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(entity.getDirection().asRotation()));
 			switch (entity.getDirection()) {
-				case SOUTH:
+				case SOUTH -> {
 					matrices.translate(1.3, 0, 0D);
-					break;
-				case WEST:
-					matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(-90));
+				}
+				case WEST -> {
+					matrices.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(-90));
 					matrices.translate(1.3, 0, -1);
-					break;
-				case EAST:
-					matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(90));
+				}
+				case EAST -> {
+					matrices.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(90));
 					matrices.translate(0.3, 0, 0);
-					break;
-				case NORTH:
-					matrices.multiply(Vector3f.POSITIVE_Y.getDegreesQuaternion(180));
+				}
+				case NORTH -> {
+					matrices.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(180));
 					matrices.translate(0.3, 0, -1);
-					break;
+				}
 			}
 			matrices.translate(0.5D, 0.5, 0.5D);
-			matrices.multiply(Vector3f.POSITIVE_Z.getDegreesQuaternion(90));
+			matrices.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion(90));
 			matrices.scale(0.6666667F, -0.6666667F, -0.6666667F);
 
 			BlockPos blockPos = entity.getPos();
-			float n = ((float)Math.floorMod((long)(blockPos.getX() * 7 + blockPos.getY() * 9 + blockPos.getZ() * 13) + entity.getWorld().getTime(), 100L) + tickDelta) / 100.0F;
+			float n = ((float)Math.floorMod(blockPos.getX() * 7L + blockPos.getY() * 9L + blockPos.getZ() * 13L + entity.getWorld().getTime(), 100L) + tickDelta) / 100.0F;
 			this.banner.pitch = (-0.0125F + 0.01F * MathHelper.cos(6.2831855F * n)) * 3.1415927F;
 			this.banner.pivotY = -32.0F;
-			BannerBlockEntityRenderer.method_29999(matrices, vertexConsumers, light, overlay, this.banner, ModelLoader.BANNER_BASE, true, list);
+			BannerBlockEntityRenderer.renderCanvas(matrices, vertexConsumers, light, overlay, this.banner, ModelLoader.BANNER_BASE, true, list);
 
 			matrices.pop();
 		}

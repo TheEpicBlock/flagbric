@@ -27,12 +27,6 @@ public class FlagBlock extends BlockWithEntity {
 		return VoxelShapes.cuboid(7f/16, 0f/16, 7f/16, 9f/16, 16f/16, 9f/16);
 	}
 
-	@Nullable
-	@Override
-	public BlockEntity createBlockEntity(BlockView world) {
-		return new FlagBlockEntity();
-	}
-
 	@Override
 	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity player, Hand hand, BlockHitResult blockHitResult) {
 		if (!(world.getBlockEntity(blockPos) instanceof FlagBlockEntity)) return ActionResult.PASS;
@@ -82,5 +76,11 @@ public class FlagBlock extends BlockWithEntity {
 	@Override
 	public BlockRenderType getRenderType(BlockState state) {
 		return BlockRenderType.MODEL;
+	}
+
+	@Nullable
+	@Override
+	public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+		return new FlagBlockEntity(pos, state);
 	}
 }
