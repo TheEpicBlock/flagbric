@@ -63,6 +63,8 @@ public class FlagItem extends BlockItem {
 				context1 = ItemPlacementContext.offset(context1, mPos, Direction.UP);
 				if (state.canReplace(context1)) {
 					return this.place(context1);
+				} else {
+					return ActionResult.FAIL;
 				}
 			}
 		}
