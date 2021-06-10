@@ -6,15 +6,20 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.state.property.Property;
+import net.minecraft.tag.ItemTags;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -23,6 +28,7 @@ import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
+import nl.theepicblock.flagbric.mixin.PlayerInventoryAccessor;
 import org.jetbrains.annotations.Nullable;
 
 public class FlagBlock extends BlockWithEntity implements Waterloggable {
@@ -57,36 +63,65 @@ public class FlagBlock extends BlockWithEntity implements Waterloggable {
 
 	@Override
 	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity player, Hand hand, BlockHitResult blockHitResult) {
-		if (!(world.getBlockEntity(blockPos) instanceof FlagBlockEntity)) return ActionResult.PASS;
+		if (!(world.getBlockEntity(blockPos) instanceof FlagBlockEntity blockEntity)) return ActionResult.PASS;
 
-		FlagBlockEntity blockEntity = (FlagBlockEntity) world.getBlockEntity(blockPos);
 		if (blockEntity == null) return ActionResult.PASS;
 
 		if (!blockEntity.isValid(0, player.getStackInHand(hand))) return ActionResult.PASS;
 		if (world.isClient) return ActionResult.SUCCESS;
 
 		Direction playerFacing = player.getHorizontalFacing().getOpposite();
-		ItemStack bStack = blockEntity.getStack(0).copy();
-		ItemStack pStack = player.getStackInHand(hand).copy();
-		if (pStack.getCount() > 1) {
-			if (bStack.isEmpty()) {
-				pStack.decrement(1);
-				player.setStackInHand(hand, pStack.copy());
-				pStack.setCount(1);
-				blockEntity.setDirection(playerFacing);
-				blockEntity.setStack(0, pStack.copy());
-			} else {
-				return ActionResult.FAIL;
+		ItemStack pStack = player.getStackInHand(hand);
+
+		if (pStack.isIn(ItemTags.BANNERS) || pStack.isEmpty()) {
+			// Attempt to yeet out the banner in the flag block
+			if (!world.isClient()) {
+				ItemStack bStack = blockEntity.getStack(0).copy();
+				boolean succes;
+				if (player.isCreative()) {
+					// Same behaviour as filling buckets
+					if (inventoryContainsTagEquals(player, bStack)) {
+						succes = true;
+					} else {
+						player.giveItemStack(bStack);
+						succes = inventoryContainsTagEquals(player, bStack);
+						bStack = blockEntity.getStack(0).copy();
+					}
+				} else {
+					// Not creative, so always give the item
+					succes = player.giveItemStack(bStack);
+				}
+				// If all else fails
+				if (!succes) {
+					ItemScatterer.spawn(world, blockPos.getX(), blockPos.getY(), blockPos.getZ(), bStack);
+				}
 			}
-		} else {
+			blockEntity.setStack(0, ItemStack.EMPTY);
+		}
+		if (pStack.isIn(ItemTags.BANNERS)) {
+			assert blockEntity.isEmpty();
+			if (!player.isCreative())
+				pStack.decrement(1);
+			player.setStackInHand(hand, pStack.copy());
+			pStack.setCount(1);
 			blockEntity.setDirection(playerFacing);
-			blockEntity.setStack(0, pStack);
-			player.setStackInHand(hand, bStack);
-			blockEntity.sync();
+			blockEntity.setStack(0, pStack.copy());
 		}
 
-
 		return ActionResult.SUCCESS;
+	}
+
+	public static boolean inventoryContainsTagEquals(PlayerEntity playerEntity, ItemStack comparer) {
+		var itemListList = ((PlayerInventoryAccessor)playerEntity.getInventory()).getCombinedInventory();
+		for (DefaultedList<ItemStack> itemList : itemListList) {
+			for (ItemStack item : itemList) {
+				if (!item.isEmpty()) {
+					if (item.isItemEqual(comparer))
+						return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {

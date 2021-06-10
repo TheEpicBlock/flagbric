@@ -4,6 +4,7 @@
   "package": "nl.theepicblock.flagbric.mixin",
   "compatibilityLevel": "JAVA_16",
   "mixins": [
+    "PlayerInventoryAccessor"
   ],
   "injectors": {
     "defaultRequire": 1
