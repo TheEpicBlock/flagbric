@@ -69,7 +69,8 @@ public class FlagBlockRenderer implements BlockEntityRenderer<FlagBlockEntity> {
 			matrices.scale(0.6666667F, -0.6666667F, -0.6666667F);
 
 			BlockPos blockPos = entity.getPos();
-			float n = ((float)Math.floorMod(blockPos.getX() * 7L + blockPos.getY() * 9L + blockPos.getZ() * 13L + entity.getWorld().getTime(), 100L) + tickDelta) / 100.0F;
+			long time = entity.getWorld() == null ? 0 : entity.getWorld().getTime();
+			float n = ((float)Math.floorMod(blockPos.getX() * 7L + blockPos.getY() * 9L + blockPos.getZ() * 13L + time, 100L) + tickDelta) / 100.0F;
 			this.banner.pitch = (-0.0125F + 0.01F * MathHelper.cos(6.2831855F * n)) * 3.1415927F;
 			this.banner.pivotY = -32.0F;
 			BannerBlockEntityRenderer.renderCanvas(matrices, vertexConsumers, light, overlay, this.banner, ModelLoader.BANNER_BASE, true, list);
