@@ -2,6 +2,7 @@ package nl.theepicblock.flagbric;
 
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
@@ -126,6 +127,14 @@ public class FlagBlock extends BlockWithEntity implements Waterloggable {
 
 			super.onStateReplaced(state, world, pos, newState, moved);
 		}
+	}
+
+	@Override
+	public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
+		if (!world.isClient() && world.getBlockEntity(pos) instanceof FlagBlockEntity be && placer != null) {
+			be.setDirection(placer.getHorizontalFacing().getOpposite());
+		}
+		super.onPlaced(world, pos, state, placer, itemStack);
 	}
 
 	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {

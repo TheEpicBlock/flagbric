@@ -5,6 +5,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
 import net.minecraft.network.MessageType;
 import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
@@ -16,6 +17,7 @@ import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 
 public class FlagPoleItem extends BlockItem {
 	public FlagPoleItem(Block block, Settings settings) {
@@ -23,7 +25,7 @@ public class FlagPoleItem extends BlockItem {
 	}
 
 	@Override
-	public ItemPlacementContext getPlacementContext(ItemPlacementContext context) {
+	public ActionResult useOnBlock(ItemUsageContext context) {
 		BlockPos blockPos = new BlockPos(context.getHitPos());
 		World world = context.getWorld();
 		BlockState blockState = world.getBlockState(blockPos);
@@ -41,17 +43,22 @@ public class FlagPoleItem extends BlockItem {
 					if (playerEntity instanceof ServerPlayerEntity player) {
 						player.sendMessage((new TranslatableText("build.tooHigh", j - 1)).formatted(Formatting.RED), MessageType.GAME_INFO, Util.NIL_UUID);
 					}
-					return null;
+					return ActionResult.FAIL;
 				}
 
 				var state = world.getBlockState(cursor);
 				if (!state.isOf(this.getBlock())) {
+					var placementContext = new ItemPlacementContext(context);
 					// We've reached a block that's not a flag block, so we can attempt to place it here
-					return ItemPlacementContext.offset(context, cursor, Direction.UP);
+					if (!state.canReplace(placementContext)) {
+						return ActionResult.FAIL;
+					}
+					var newContext = ItemPlacementContext.offset(placementContext, cursor, Direction.UP);
+					return this.place(newContext);
 				}
 			}
 		}
-		return context;
+		return super.useOnBlock(context);
 	}
 
 	protected boolean checkStatePlacement() {
