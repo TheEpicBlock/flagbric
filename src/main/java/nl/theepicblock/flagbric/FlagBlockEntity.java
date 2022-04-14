@@ -12,6 +12,7 @@ import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
 import org.jetbrains.annotations.Nullable;
 
@@ -119,14 +120,22 @@ public class FlagBlockEntity extends BlockEntity implements Inventory {
 	}
 
 	private void sync() {
-		if (world instanceof ServerWorld sWorld) {
-			sWorld.getPlayers(player -> player.getBlockPos().isWithinDistance(this.getPos(), 1000)).forEach(player -> player.networkHandler.sendPacket(this.toUpdatePacket()));
+		if (this.getWorld() instanceof ServerWorld serverWorld) {
+			var updatePacket = this.toUpdatePacket();
+
+			serverWorld.getChunkManager().threadedAnvilChunkStorage
+					.getPlayersWatchingChunk(new ChunkPos(this.pos))
+					.forEach(player -> player.networkHandler.sendPacket(updatePacket));
 		}
+	}
+
+	public NbtCompound toInitialChunkDataNbt() {
+		return this.createNbt();
 	}
 
 	@Nullable
 	@Override
 	public Packet<ClientPlayPacketListener> toUpdatePacket() {
-		return BlockEntityUpdateS2CPacket.create(this, BlockEntity::createNbt);
+		return BlockEntityUpdateS2CPacket.create(this);
 	}
 }
