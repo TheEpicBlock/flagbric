@@ -2,19 +2,16 @@ package nl.theepicblock.flagbric;
 
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.inventory.Inventory;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
-import net.minecraft.state.property.Property;
 import net.minecraft.tag.ItemTags;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -50,7 +47,7 @@ public class FlagBlock extends BlockWithEntity implements Waterloggable {
 
 	public BlockState getStateForNeighborUpdate(BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos, BlockPos neighborPos) {
 		if (state.get(WATERLOGGED)) {
-			world.getFluidTickScheduler().schedule(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
+			world.createAndScheduleBlockTick(pos, Blocks.WATER, Fluids.WATER.getTickRate(world));
 		}
 
 		return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
@@ -65,58 +62,54 @@ public class FlagBlock extends BlockWithEntity implements Waterloggable {
 	public ActionResult onUse(BlockState blockState, World world, BlockPos blockPos, PlayerEntity player, Hand hand, BlockHitResult blockHitResult) {
 		if (!(world.getBlockEntity(blockPos) instanceof FlagBlockEntity blockEntity)) return ActionResult.PASS;
 
-		if (blockEntity == null) return ActionResult.PASS;
-
+		// Check if item is a banner
 		if (!blockEntity.isValid(0, player.getStackInHand(hand))) return ActionResult.PASS;
-		if (world.isClient) return ActionResult.SUCCESS;
+		if (world.isClient()) return ActionResult.SUCCESS;
 
-		Direction playerFacing = player.getHorizontalFacing().getOpposite();
-		ItemStack pStack = player.getStackInHand(hand);
+		ItemStack handStack = player.getStackInHand(hand);
 
-		if (pStack.isIn(ItemTags.BANNERS) || pStack.isEmpty()) {
-			// Attempt to yeet out the banner in the flag block
-			if (!world.isClient()) {
-				ItemStack bStack = blockEntity.getStack(0).copy();
-				boolean succes;
-				if (player.isCreative()) {
-					// Same behaviour as filling buckets
-					if (inventoryContainsTagEquals(player, bStack)) {
-						succes = true;
-					} else {
-						player.giveItemStack(bStack);
-						succes = inventoryContainsTagEquals(player, bStack);
-						bStack = blockEntity.getStack(0).copy();
-					}
-				} else {
-					// Not creative, so always give the item
-					succes = player.giveItemStack(bStack);
+		// This is true if the item the player is holding is the same as the item already on the pole
+		// In this case, it doesn't make sense to swap the banner with the same banner
+		// So instead, we're just going to remove the banner already there but not replace it with anything
+		var holdingTheSameItem = ItemStack.canCombine(handStack, blockEntity.getStack(0));
+
+		if (!blockEntity.isEmpty()) {
+			// Remove the existing item
+			ItemStack originalStack = blockEntity.getStack(0).copy();
+			if (player.isCreative()) {
+				// Don't give a new banner if the player already has a banner
+				if (!inventoryContainsTagEquals(player, originalStack)) {
+					player.getInventory().offerOrDrop(originalStack);
 				}
-				// If all else fails
+			} else {
+				// Not creative, so always give the item
+				boolean succes = player.giveItemStack(originalStack);
 				if (!succes) {
-					ItemScatterer.spawn(world, blockPos.getX(), blockPos.getY(), blockPos.getZ(), bStack);
+					ItemScatterer.spawn(world, blockPos.getX(), blockPos.getY(), blockPos.getZ(), originalStack);
 				}
 			}
 			blockEntity.setStack(0, ItemStack.EMPTY);
 		}
-		if (pStack.isIn(ItemTags.BANNERS)) {
+
+		if (handStack.isIn(ItemTags.BANNERS) && !holdingTheSameItem) {
 			assert blockEntity.isEmpty();
 			if (!player.isCreative())
-				pStack.decrement(1);
-			player.setStackInHand(hand, pStack.copy());
-			pStack.setCount(1);
-			blockEntity.setDirection(playerFacing);
-			blockEntity.setStack(0, pStack.copy());
+				handStack.decrement(1);
+			player.setStackInHand(hand, handStack.copy());
+			handStack.setCount(1);
+			blockEntity.setDirection(player.getHorizontalFacing().getOpposite());
+			blockEntity.setStack(0, handStack.copy());
 		}
 
-		return ActionResult.SUCCESS;
+		return ActionResult.CONSUME_PARTIAL;
 	}
 
-	public static boolean inventoryContainsTagEquals(PlayerEntity playerEntity, ItemStack comparer) {
-		var itemListList = ((PlayerInventoryAccessor)playerEntity.getInventory()).getCombinedInventory();
-		for (DefaultedList<ItemStack> itemList : itemListList) {
-			for (ItemStack item : itemList) {
-				if (!item.isEmpty()) {
-					if (item.isItemEqual(comparer))
+	public static boolean inventoryContainsTagEquals(PlayerEntity playerEntity, ItemStack stackToFind) {
+		var inventoryLists = ((PlayerInventoryAccessor)playerEntity.getInventory()).getCombinedInventory();
+		for (DefaultedList<ItemStack> stacks : inventoryLists) {
+			for (ItemStack stack : stacks) {
+				if (!stack.isEmpty()) {
+					if (ItemStack.canCombine(stack, stackToFind))
 						return true;
 				}
 			}
@@ -134,6 +127,14 @@ public class FlagBlock extends BlockWithEntity implements Waterloggable {
 
 			super.onStateReplaced(state, world, pos, newState, moved);
 		}
+	}
+
+	@Override
+	public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack itemStack) {
+		if (!world.isClient() && world.getBlockEntity(pos) instanceof FlagBlockEntity be && placer != null) {
+			be.setDirection(placer.getHorizontalFacing().getOpposite());
+		}
+		super.onPlaced(world, pos, state, placer, itemStack);
 	}
 
 	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {

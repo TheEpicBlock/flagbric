@@ -7,14 +7,12 @@ import net.minecraft.block.entity.BannerPattern;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BannerBlockEntityRenderer;
-import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
 import net.minecraft.client.render.entity.model.EntityModelLayers;
 import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.BannerItem;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.math.BlockPos;
@@ -38,11 +36,11 @@ public class FlagBlockRenderer implements BlockEntityRenderer<FlagBlockEntity> {
 			if (!(stack.getItem() instanceof BannerItem)) return;
 
 			DyeColor color = ((BannerItem)stack.getItem()).getColor();
-			List<Pair<BannerPattern, DyeColor>> list = BannerBlockEntity.getPatternsFromNbt(color, BannerBlockEntity.getPatternListTag(stack));
+			List<Pair<BannerPattern, DyeColor>> list = BannerBlockEntity.getPatternsFromNbt(color, BannerBlockEntity.getPatternListNbt(stack));
 
-			if (BANNERPP) {
-				BannerppHandler.onPreRender(stack);
-			}
+//			if (BANNERPP) {
+//				BannerppHandler.onPreRender(stack);
+//			}
 
 			matrices.push();
 

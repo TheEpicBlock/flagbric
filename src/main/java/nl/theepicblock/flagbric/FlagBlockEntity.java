@@ -1,6 +1,5 @@
 package nl.theepicblock.flagbric;
 
-import net.fabricmc.fabric.api.block.entity.BlockEntityClientSerializable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -8,10 +7,16 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.item.BannerItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.Packet;
+import net.minecraft.network.listener.ClientPlayPacketListener;
+import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
+import org.jetbrains.annotations.Nullable;
 
-public class FlagBlockEntity extends BlockEntity implements Inventory,BlockEntityClientSerializable {
+public class FlagBlockEntity extends BlockEntity implements Inventory {
 	private ItemStack banner = ItemStack.EMPTY;
 	private Direction direction = Direction.NORTH;
 
@@ -98,29 +103,39 @@ public class FlagBlockEntity extends BlockEntity implements Inventory,BlockEntit
 
 	@Override
 	public void readNbt(NbtCompound tag) {
+		super.readNbt(tag);
 		if (tag.contains("item", 10)) {
 			banner = ItemStack.fromNbt(tag.getCompound("item"));
 		}
 		if (tag.contains("direction")) {
 			direction = Direction.fromRotation(tag.getFloat("direction"));
 		}
-		super.readNbt(tag);
 	}
 
 	@Override
-	public NbtCompound writeNbt(NbtCompound tag) {
-		tag.put("item", banner.writeNbt(new NbtCompound()));
-		tag.putFloat("direction", direction.asRotation());
-		return super.writeNbt(tag);
+	public void writeNbt(NbtCompound nbt) {
+		super.writeNbt(nbt);
+		nbt.put("item", banner.writeNbt(new NbtCompound()));
+		nbt.putFloat("direction", direction.asRotation());
 	}
 
-	@Override
-	public void fromClientTag(NbtCompound compoundTag) {
-		this.readNbt(compoundTag);
+	private void sync() {
+		if (this.getWorld() instanceof ServerWorld serverWorld) {
+			var updatePacket = this.toUpdatePacket();
+
+			serverWorld.getChunkManager().threadedAnvilChunkStorage
+					.getPlayersWatchingChunk(new ChunkPos(this.pos))
+					.forEach(player -> player.networkHandler.sendPacket(updatePacket));
+		}
 	}
 
+	public NbtCompound toInitialChunkDataNbt() {
+		return this.createNbt();
+	}
+
+	@Nullable
 	@Override
-	public NbtCompound toClientTag(NbtCompound compoundTag) {
-		return writeNbt(compoundTag);
+	public Packet<ClientPlayPacketListener> toUpdatePacket() {
+		return BlockEntityUpdateS2CPacket.create(this);
 	}
 }
