@@ -7,7 +7,6 @@ import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityT
 import net.minecraft.block.Block;
 import net.minecraft.block.Material;
 import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.util.Identifier;
@@ -22,7 +21,7 @@ public class Flagbric implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		Registry.register(Registry.BLOCK, new Identifier("flagbric", "flag_block"), FLAG_BLOCK);
-		Registry.register(Registry.ITEM, new Identifier("flagbric", "flag_block"), new FlagItem(FLAG_BLOCK, new FabricItemSettings().group(ItemGroup.BUILDING_BLOCKS)));
+		Registry.register(Registry.ITEM, new Identifier("flagbric", "flag_block"), new FlagPoleItem(FLAG_BLOCK, new FabricItemSettings().group(ItemGroup.BUILDING_BLOCKS)));
 
 		FLAG_BLOCK_ENTITY = Registry.register(Registry.BLOCK_ENTITY_TYPE, "flagbric:flag_block_entity", FabricBlockEntityTypeBuilder.create(FlagBlockEntity::new, FLAG_BLOCK).build(null));
 	}
