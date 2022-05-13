@@ -15,6 +15,9 @@ repositories {
 	maven {
 		url 'https://server.bbkr.space/artifactory/libs-release/'
 	}
+	maven {
+		url "https://maven.theepicblock.nl"
+	}
 	mavenLocal()
 }
 
@@ -26,7 +29,7 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-//	modImplementation "io.github.fablabsmc:bannerpp:${project.bannerpp_version}"
+	modImplementation "io.github.fablabsmc:bannerpp:${project.bannerpp_version}"
 }
 
 processResources {

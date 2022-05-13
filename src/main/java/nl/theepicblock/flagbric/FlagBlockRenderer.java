@@ -38,9 +38,9 @@ public class FlagBlockRenderer implements BlockEntityRenderer<FlagBlockEntity> {
 			DyeColor color = ((BannerItem)stack.getItem()).getColor();
 			List<Pair<BannerPattern, DyeColor>> list = BannerBlockEntity.getPatternsFromNbt(color, BannerBlockEntity.getPatternListNbt(stack));
 
-//			if (BANNERPP) {
-//				BannerppHandler.onPreRender(stack);
-//			}
+			if (BANNERPP) {
+				BannerppHandler.onPreRender(stack);
+			}
 
 			matrices.push();
 
